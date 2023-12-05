@@ -1,9 +1,12 @@
 import logging
 import re
 import pandas as pd
-import spacy
 import os
 import nltk
+from sklearn.model_selection import train_test_split
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Load Function
 def load_data(file_path, chunk_size=1000):
@@ -30,98 +33,21 @@ def load_data(file_path, chunk_size=1000):
 # Function Custom Text Cleaning
 def custom_clean_text(text):
     """
-    Perform custom cleaning of text data.
-    Args: 
+    Perform custom cleaning of text data for Seq2Seq model preparation.
     text (str): The text to be cleaned.
     Returns:
     str: Cleaned text.
     """
     try:
-        # Decode HTML entities
-        text = html.unescape(text)
-        # Remove URLs
-        text = re.sub(r'http\S+', '', text)
-        # Remove user mentions and hashtags
-        text = re.sub(r'@\w+', '', text)
-        text = re.sub(r'#\w+', '', text)
-        # Remove special characters
-        text = re.sub(r'[^a-zA-Z\s]', ' ', text)
-        # Remove extra spaces, new lines
-        text = ' '.join(text.split())
-        # Convert to lowercase
-        text = text.lower()
+        # Remove URLs, user mentions, hashtags, and special characters
+        text = re.sub(r'http\S+|@\w+|#\w+|[^\w\s]', '', text)
+        # Convert to lowercase and remove extra spaces
+        text = ' '.join(text.lower().strip().split())
         return text
     except Exception as e:
-        logging.error(f"Error in cleaning text: {e}")
+        logging.error(f"Error in cleaning text for Seq2Seq: {e}")
         return None
-
-# Function to preprocess text in batches with SpaCy    
-def batch_spacy_preprocessing(texts, batch_size=1000):
-    """
-    Process a batch of texts using SpaCy for NLP tasks such as lemmatization, 
-    part-of-speech tagging, and dependency parsing.
-    Args:
-    texts (list of str): A list of texts to be processed.
-    batch_size (int): The number of texts to process in each batch.
-    Returns:
-    tuple: Three lists containing the processed texts, POS tags, and dependency parses.
-    """
-    try:
-        # Load SpaCy model
-        nlp = spacy.load('en_core_web_sm')
-        processed_texts, pos_tags, dep_parses = [], [], []
-
-        # Process texts in batches
-        for doc in nlp.pipe(texts, batch_size=batch_size):
-            if doc.is_parsed:
-                doc_lemmas = [token.lemma_ for token in doc if not token.is_stop]
-                doc_pos_tags = [token.pos_ for token in doc]
-                doc_dep_parse = [token.dep_ for token in doc]
-            else:
-                doc_lemmas, doc_pos_tags, doc_dep_parse = None, None, None
-
-            processed_texts.append(' '.join(doc_lemmas) if doc_lemmas else None)
-            pos_tags.append(doc_pos_tags)
-            dep_parses.append(doc_dep_parse)
-
-        logging.info("Spacy batch processing completed successfully")
-        return processed_texts, pos_tags, dep_parses
-    except Exception as e:
-        logging.error(f"Error in Spacy batch processing: {e}")
-        # Optionally return a default value or empty lists if error occurs
-        return [], [], []
     
-
-# Function to link queries
-def link_queries_responses(df):
-    """
-    Link inbound queries with their corresponding outbound responses in a DataFrame.
-    Args:
-        df (pd.DataFrame): DataFrame containing the processed data.
-    Returns:
-        pd.DataFrame: DataFrame with linked queries and responses.
-    """
-    try:
-        # Separate inbound and outbound data
-        df_inbound = df[df['inbound'] == True][['tweet_id', 'author_id', 'processed_text', 'created_at']]
-        df_outbound = df[df['inbound'] == False][['in_response_to_tweet_id', 'processed_text', 'created_at']]
-
-        # Rename columns for clarity
-        df_outbound.rename(columns={
-            'in_response_to_tweet_id': 'tweet_id', 
-            'processed_text': 'response_processed_text', 
-            'created_at': 'response_created_at'
-        }, inplace=True)
-
-        # Merge on the tweet ID
-        df_linked = pd.merge(df_inbound, df_outbound, on='tweet_id', how='left', suffixes=('_inbound', '_outbound'))
-        logging.info("Queries and responses linked successfully")
-        return df_linked
-    except Exception as e:
-        logging.error(f"Error in linking queries and responses: {e}")
-        raise e
-   
-
 # Function to classify sentiment with threshold score
 def classify_sentiment(score):
     """
@@ -206,22 +132,6 @@ def count_entity_type(entities, entity_type):
         return 0
     
 
-# entity type count
-def count_entity_type(entities, entity_type):
-    """
-    Count the number of entities of a specific type.
-    Args:
-        entities (list of tuples): List of entity tuples (entity, entity type).
-        entity_type (str): The entity type to count.
-    Returns:
-        int: Count of the specified entity type.
-    """
-    try:
-        return sum(entity[1] == entity_type for entity in entities if isinstance(entity, tuple))
-    except Exception as e:
-        logging.error(f'Error in counting entities of type {entity_type}: {e}')
-        return 0
-
 # feature engineering
 def feature_engineering(df):
     """
@@ -252,3 +162,22 @@ def feature_engineering(df):
     except Exception as e:
         logging.error(f'Error in feature engineering: {e}')
         return None
+    
+# Modeling functions
+def split_data(X, y, test_size=0.2):
+    """
+    Split the data into train and test sets.
+    Args:
+    X: Features (1-D array-like).
+    y: Dependent variable (1-D array-like).
+    test_size (float, optional): Proportion of the dataset to include in the test split (default is 0.2).
+    Returns:
+    X_train, X_test, y_train, y_test: Split data.
+    """
+    try: 
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
+        logging.info("Data successfully split into train and test sets.")
+        return X_train, X_test, y_train, y_test
+    except Exception as e:
+        logging.error(f"Error in splitting data: {e}")
+        raise
