@@ -1,7 +1,66 @@
-nlp-yoldi-chatbot
-==============================
+# Sentiment Analysis For Customer Interactions In X (Formerly Twitter)
+![Python 3.8](https://img.shields.io/badge/Python-3.8-blue)
 
-NLP-based chatproject that wilwill focus on developing a chatbot (“Yoldi”) capable of understanding and answering predefined customer queries. The project will not extend to real-time dynamic interactions involving personalized customer data.
+## Table of Contents
+1. [Introduction](#introduction)
+    - [Project Overview](#project-overview)
+2. [Data Wrangling](#data-wrangling)
+3. [Exploratory Data Analysis](#exploratory-data-analysis)
+4. [Data Preprocessing and Feature Engineering](#data-preprocessing-and-feature-engineering)
+5. [Modeling](#modeling)
+    - [Model Evaluation Metrics](#model-evaluation-metrics)
+    - [Hyperparameter Tuning](#hyperparameter-tuning)
+    - [Model Selection and Interpretation](#model-selection-and-interpretation)
+6. [Conclusions and Business Recommendations](#conclusions-and-business-recommendations)
+7. [References](#references)
+8. [Installation](#installation)
+9. [Technologies Used](#technologies-used)
+10. [Contact](#contact)
+
+## Introduction
+This project utilizes machine learning to analyze and classify customer support interactions on X (formerly known as Twitter) into distinct sentiment categories. This will enable businesses to glean insights into customer sentiment, improving response strategies and overall customer satisfaction.
+
+### Project Overview
+The goal is to process and analyze textual customer support data to develop an accurate and reliable sentiment classification model. This model will help predict the sentiment of customer interactions, offering valuable feedback to the customer support teams.
+
+## Data Wrangling
+The project began with data cleaning and transformation, standardizing text, handling missing values, and preparing the dataset for further analysis.
+- [Data Wrangling and EDA Notebook](/notebooks/data-wrangling-cleaning.ipynb)
+
+## Exploratory Data Analysis
+We conducted an in-depth EDA to uncover underlying patterns, analyze sentiment distribution, and prepare for subsequent preprocessing and modeling stages.
+- [Data Wrangling and EDA Notebook](/notebooks/data-wrangling-cleaning.ipynb)
+
+## Data Preprocessing and Feature Engineering
+In this phase, we tackled issues such as text normalization, lemmatization, and feature extraction—enhancing the dataset for robust modeling.
+- [Preprocessing and Modeling Notebook](notebooks/text-preprocessing-modeling.ipynb)
+
+## Modeling
+We explored several models, evaluated them on a variety of metrics, fine-tuned hyperparameters, and finally selected the most suitable model based on performance (F1 Score) and interoperability.
+- [Preprocessing and Modeling Notebook](notebooks/text-preprocessing-modeling.ipynb)
+
+### Model Evaluation Metrics
+The models were evaluated using accuracy, precision, recall, and F1-score to ensure a comprehensive assessment of their performance. F1-score was chosen as the baseline metric for model selection.
+
+### Hyperparameter Tuning
+We utilized RandomizedSearchCV for an efficient search through the hyperparameter space to improve model performance.
+
+### Model Selection and Interpretation
+We selected the best-performing model and interpreted its feature importance to understand the factors influencing sentiment classification.
+- [Preprocessing and Modeling Notebook](notebooks/text-preprocessing-modeling.ipynb)
+
+## Conclusions and Business Recommendations
+Our findings provide actionable insights into customer sentiment trends. We offer recommendations for leveraging this model to enhance customer service and inform business strategies.
+
+## References
+This section will include citations and sources of external content used throughout the project.
+
+## Installation
+Instructions for setting up the project environment and installing dependencies.
+
+```bash
+pip install -r requirements.txt
+
 
 Project Organization
 ------------
