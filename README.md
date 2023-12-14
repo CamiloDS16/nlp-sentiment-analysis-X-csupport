@@ -50,7 +50,7 @@ We selected the best-performing model and interpreted its feature importance to 
 - [Preprocessing and Modeling Notebook](notebooks/text-preprocessing-modeling.ipynb)
 
 ## Conclusions and Business Recommendations
-Our findings provide actionable insights into customer sentiment trends. We offer recommendations for leveraging this model to enhance customer service and inform business strategies.
+Our findings provide actionable insights into customer sentiment trends.T he project showcases the power of sentiment analysis in understanding customer feedback. Future steps could involve deploying the model in a real-time analysis setting.
 
 ## References
 Customer Support in Twitter's dataset retrieved from Kaggle. 
