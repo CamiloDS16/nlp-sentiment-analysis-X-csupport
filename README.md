@@ -24,11 +24,11 @@ This project utilizes machine learning to analyze and classify customer support 
 The goal is to process and analyze textual customer support data to develop an accurate and reliable sentiment classification model. This model will help predict the sentiment of customer interactions, offering valuable feedback to the customer support teams.
 
 ## Data Wrangling
-The project began with data cleaning and transformation, standardizing text, handling missing values, and preparing the dataset for further analysis.
+Data wrangling involved setting up a PostgreSQL database, handling missing values, and text normalization. The cleaned data was then prepared for EDA and feature extraction.
 - [Data Wrangling and EDA Notebook](/notebooks/data-wrangling-cleaning.ipynb)
 
 ## Exploratory Data Analysis
-We conducted an in-depth EDA to uncover underlying patterns, analyze sentiment distribution, and prepare for subsequent preprocessing and modeling stages.
+We conducted an in-depth EDA to uncover underlying patterns, analyze sentiment distribution, and prepare for subsequent preprocessing and modeling stages. Insights were drawn using visualizations like word clouds and sentiment over time plots.
 - [Data Wrangling and EDA Notebook](/notebooks/data-wrangling-cleaning.ipynb)
 
 ## Data Preprocessing and Feature Engineering
