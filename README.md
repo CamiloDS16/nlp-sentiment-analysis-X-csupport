@@ -53,7 +53,7 @@ We selected the best-performing model and interpreted its feature importance to 
 Our findings provide actionable insights into customer sentiment trends. We offer recommendations for leveraging this model to enhance customer service and inform business strategies.
 
 ## References
-This section will include citations and sources of external content used throughout the project.
+Customer Support in Twitter's dataset retrieved from Kaggle. 
 
 ## Installation
 Instructions for setting up the project environment and installing dependencies.
