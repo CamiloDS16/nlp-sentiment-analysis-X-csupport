@@ -1,4 +1,4 @@
-# Sentiment Analysis For Customer Interactions In X (Formerly Twitter)
+# Sentiment Analysis For Customer Interactions On X (Formerly Twitter)
 ![Python 3.8](https://img.shields.io/badge/Python-3.8-blue)
 
 ## Table of Contents
