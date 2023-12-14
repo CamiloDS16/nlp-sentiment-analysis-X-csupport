@@ -4,6 +4,24 @@ import pandas as pd
 import os
 import nltk
 from sklearn.model_selection import train_test_split
+import spacy
+from sklearn.feature_extraction.text import TfidfVectorizer
+import pickle
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report, accuracy_score
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier
+from xgboost import XGBClassifier
+from sklearn.model_selection import StratifiedKFold, cross_validate
+from sklearn.model_selection import RandomizedSearchCV
+from joblib import load, dump
+import pickle
+from sklearn.preprocessing import LabelEncoder
+import logging
+import warnings
+from utils import *
+from sklearn.model_selection import train_test_split
+nlp = spacy.load('en_core_web_sm')
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -47,33 +65,12 @@ def custom_clean_text(text):
     except Exception as e:
         logging.error(f"Error in cleaning text for Seq2Seq: {e}")
         return None
-    
-# Function to classify sentiment with threshold score
-def classify_sentiment(score):
-    """
-    Classify the sentiment of the tweets based on a sentiment score.
-    Returns 'Positive', 'Negative', or 'Neutral' based on the score.
-    score (float): The sentiment score to classify.
-    Returns:
-    str: The sentiment classification ('Positive', 'Negative', 'Neutral').
-    """
-    try:
-        if score > 0.2:
-            return 'Positive'
-        elif score < -0.2:
-            return 'Negative'
-        else:
-            return 'Neutral'
-    except Exception as e:
-        logging.error(f"Error in classifying sentiment: {e}")
-        # Optionally, return a default classification or raise the exception
-        return 'Neutral'
-    
+
 
 # Function to Save Model:
 def save_model(model, model_path):
     """
-    Saves the given model to the specified path.
+    Saves the given model to the specified path using pickle.
     model: The machine learning model to be saved.
     model_path (str): The path where the model should be saved.
     """
@@ -81,12 +78,13 @@ def save_model(model, model_path):
         # Ensure the directory exists
         os.makedirs(os.path.dirname(model_path), exist_ok=True)
         
-        # Save the model
-        model.save(model_path)
+        # Save the model using pickle
+        with open(model_path, 'wb') as file:
+            pickle.dump(model, file)
         logging.info(f"Model saved successfully at {model_path}")
     except Exception as e:
         logging.error(f"Error saving the model: {e}")
-    
+ 
 
 # Function to save data
 def save_data(df, folder_path, file_name):
@@ -115,53 +113,6 @@ def save_data(df, folder_path, file_name):
         logging.error(f"Error saving the DataFrame to CSV: {e}")
         return None
 
-# Function to Count Ents   
-def count_entity_type(entities, entity_type):
-    """
-    Count the number of entities of a specific type.
-    Args:
-        entities (list of tuples): List of entity tuples (entity, entity type).
-        entity_type (str): The entity type to count.
-    Returns:
-        int: Count of the specified entity type.
-    """
-    try:
-        return sum(entity[1] == entity_type for entity in entities if isinstance(entity, tuple))
-    except Exception as e:
-        logging.error(f'Error in counting entities of type {entity_type}: {e}')
-        return 0
-    
-
-# feature engineering
-def feature_engineering(df):
-    """
-    Create features for modeling tasks.
-    Args:
-        df (pd.DataFrame): DataFrame which the function will create features for.
-    Returns:
-        pd.DataFrame: DataFrame with engineered features.
-    """
-    try:
-        df['entity_count'] = df['entities'].apply(lambda x: len(x) if isinstance(x, list) else 0)
-        df['text_length'] = df['processed_text'].apply(lambda x: len(x) if isinstance(x, str) else 0)
-
-        # Check if 'pos_tags' column is present and is a list before processing
-        if 'pos_tags' in df.columns:
-            df['unique_pos_count'] = df['pos_tags'].apply(lambda x: len(set(x)) if isinstance(x, list) else 0)
-        else:
-            df['unique_pos_count'] = 0
-
-        df['sentence_complexity'] = df['dep_parse'].apply(lambda x: len(set(x)) / len(x) if isinstance(x, list) and x else 0)
-        df['vocab_diversity'] = df['processed_text'].apply(lambda x: len(set(x.split())) / len(x.split()) if isinstance(x, str) and x.split() else 0)
-
-        # Check if 'entities' column is present and is a list before applying count_entity_type
-        df['product_entity_count'] = df['entities'].apply(lambda x: count_entity_type(x, 'PRODUCT') if isinstance(x, list) else 0)
-
-        logging.info("Feature Engineering function applied successfully")
-        return df
-    except Exception as e:
-        logging.error(f'Error in feature engineering: {e}')
-        return None
     
 # Modeling functions
 def split_data(X, y, test_size=0.2):
@@ -181,3 +132,82 @@ def split_data(X, y, test_size=0.2):
     except Exception as e:
         logging.error(f"Error in splitting data: {e}")
         raise
+
+def preprocess_text(text):
+    """
+    Perform lemmatization and POS tagging.
+
+    Args:
+    text (str): Text to be processed.
+
+    Returns:
+    dict: Dictionary containing processed text and POS tags.
+    """
+    if not isinstance(text, str):
+        logging.warning("Non-string input encountered. Converting to string.")
+        text = str(text)
+
+    try:
+        doc = nlp(text)
+        processed_text = ' '.join([token.lemma_ for token in doc if not token.is_stop and not token.is_punct])
+        pos_tags = [token.pos_ for token in doc]
+
+        return {
+            'processed_text': processed_text,
+            'pos_tags': pos_tags
+        }
+    except Exception as e:
+        logging.error(f"Error in preprocess_text function: {e}")
+        return {'processed_text': '', 'pos_tags': []}
+
+def extract_entities(text):
+    """
+    Extract named entities using spaCy NER.
+
+    Args:
+    text (str): Text from which to extract entities.
+
+    Returns:
+    list: List of named entities.
+    """
+    doc = nlp(text)
+    return [ent.text for ent in doc.ents]
+
+# function to evaluate models
+def evaluate_model(model, model_name, X, y):
+    """
+    Evaluate a model using cross-validation and return its performance metrics.
+    Args:
+    model: The machine learning model to be evaluated.
+    model_name (str): Name of the model.
+    X: Features for model training.
+    y: Target variable.
+    Returns:
+    pd.DataFrame: A DataFrame with performance metrics for the model.
+    """
+    try:
+        scores = cross_validate(model, X, y, cv=5, scoring=['accuracy', 'precision_macro', 'recall_macro', 'f1_macro'], return_train_score=False)
+
+        # Calculating the mean of each metric
+        mean_scores = {metric: scores[f'test_{metric}'].mean() for metric in ['accuracy', 'precision_macro', 'recall_macro', 'f1_macro']}
+        
+        # Creating a DataFrame row
+        df_row = pd.DataFrame({
+            'Model': [model_name],
+            'F1 Score': [mean_scores['f1_macro']],
+            'Accuracy': [mean_scores['accuracy']],
+            'Recall': [mean_scores['recall_macro']],
+            'Precision': [mean_scores['precision_macro']]
+        })
+
+        logging.info(f"{model_name} evaluation completed successfully.")
+        return df_row
+    except Exception as e:
+        logging.error(f"Error in evaluating model {model_name}: {e}")
+        return pd.DataFrame({
+            'Model': [model_name],
+            'F1 Score': [None],
+            'Accuracy': [None],
+            'Recall': [None],
+            'Precision': [None]
+            })
