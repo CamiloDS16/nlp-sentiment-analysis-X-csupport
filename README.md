@@ -60,7 +60,17 @@ Instructions for setting up the project environment and installing dependencies.
 
 ```bash
 pip install -r requirements.txt
+```
+## Technologies Used
+Python
+Pandas
+scikit-learn
+Matplotlib
+Seaborn
+XGBoost
 
+### Contact
+For inquiries or contributions, please reach out to me at camilodurangos@gmail.com.
 
 Project Organization
 ------------
