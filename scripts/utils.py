@@ -1,6 +1,7 @@
 import logging
 import re
 import pandas as pd
+import numpy as np
 import os
 import nltk
 from sklearn.model_selection import train_test_split
@@ -8,7 +9,7 @@ import spacy
 from sklearn.feature_extraction.text import TfidfVectorizer
 import pickle
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report, accuracy_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
@@ -174,40 +175,52 @@ def extract_entities(text):
     return [ent.text for ent in doc.ents]
 
 # function to evaluate models
-def evaluate_model(model, model_name, X, y):
+def evaluate_model(model, X_train, y_train, X_test, y_test):
     """
-    Evaluate a model using cross-validation and return its performance metrics.
-    Args:
-    model: The machine learning model to be evaluated.
-    model_name (str): Name of the model.
-    X: Features for model training.
-    y: Target variable.
-    Returns:
-    pd.DataFrame: A DataFrame with performance metrics for the model.
+    Evaluate the model and capture both train and test scores.
     """
-    try:
-        scores = cross_validate(model, X, y, cv=5, scoring=['accuracy', 'precision_macro', 'recall_macro', 'f1_macro'], return_train_score=False)
+    model.fit(X_train, y_train)
+    y_train_pred = model.predict(X_train)
+    y_test_pred = model.predict(X_test)
+    
+    # Get train scores
+    train_accuracy = accuracy_score(y_train, y_train_pred)
+    train_precision = precision_score(y_train, y_train_pred, average='macro')
+    train_recall = recall_score(y_train, y_train_pred, average='macro')
+    train_f1 = f1_score(y_train, y_train_pred, average='macro')
+    
+    # Get test scores
+    test_accuracy = accuracy_score(y_test, y_test_pred)
+    test_precision = precision_score(y_test, y_test_pred, average='macro')
+    test_recall = recall_score(y_test, y_test_pred, average='macro')
+    test_f1 = f1_score(y_test, y_test_pred, average='macro')
+    
+    # Store results in a dictionary
+    results = {
+        'Model': model.__class__.__name__,
+        'Train Accuracy': train_accuracy,
+        'Test Accuracy': test_accuracy,
+        'Train Precision': train_precision,
+        'Test Precision': test_precision,
+        'Train Recall': train_recall,
+        'Test Recall': test_recall,
+        'Train F1': train_f1,
+        'Test F1': test_f1
+    }
+    
+    return results
 
-        # Calculating the mean of each metric
-        mean_scores = {metric: scores[f'test_{metric}'].mean() for metric in ['accuracy', 'precision_macro', 'recall_macro', 'f1_macro']}
-        
-        # Creating a DataFrame row
-        df_row = pd.DataFrame({
-            'Model': [model_name],
-            'F1 Score': [mean_scores['f1_macro']],
-            'Accuracy': [mean_scores['accuracy']],
-            'Recall': [mean_scores['recall_macro']],
-            'Precision': [mean_scores['precision_macro']]
-        })
 
-        logging.info(f"{model_name} evaluation completed successfully.")
-        return df_row
-    except Exception as e:
-        logging.error(f"Error in evaluating model {model_name}: {e}")
-        return pd.DataFrame({
-            'Model': [model_name],
-            'F1 Score': [None],
-            'Accuracy': [None],
-            'Recall': [None],
-            'Precision': [None]
-            })
+def evaluate_with_cv(model, X, y, model_name, cv=5, scoring=['accuracy', 'precision_macro', 'recall_macro', 'f1_macro']):
+    """
+    Evaluate a model using cross-validation and return a dictionary with model name, 
+    train and test scores for each metric.
+    """
+    scores = cross_validate(model, X, y, cv=cv, scoring=scoring, return_train_score=True)
+    
+    # Combine average scores across all folds for both train and test sets
+    combined_scores = {f"train_{metric}": np.mean(scores[f"train_{metric}"]) for metric in scoring}
+    combined_scores.update({f"test_{metric}": np.mean(scores[f"test_{metric}"]) for metric in scoring})
+    combined_scores['Model'] = model_name
+
+    return combined_scores
